@@ -1,0 +1,660 @@
+{
+  "name": "Final_N8N",
+  "nodes": [
+    {
+      "parameters": {
+        "command": "python3 /data/shared/News_Scraper_Demo_Location.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -3980,
+        -480
+      ],
+      "id": "663417fb-e3dc-44bf-b7fd-f93bdb9edf1f",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\nconst{url,title,published,summary,trust_score,impact,location_country,latitude,longitude\n  } = item.json;\n\n  return {\n    json: {\n      combined: `${url} | ${title} | ${published} | ${summary} |  ${trust_score} | ${impact} | ${location_country} | ${latitude} | ${longitude}`\n    }\n  };\n});\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3560,
+        -480
+      ],
+      "id": "de786f71-486d-4da4-bc14-c3540b5f91da",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "N8N",
+          "mode": "list",
+          "cachedResultName": "N8N"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -3320,
+        -480
+      ],
+      "id": "ce4efc4f-74ed-4360-9f4c-b82c37081cbb",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "S3HTJvkaSLfghROZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "snowflake-arctic-embed:22m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -3380,
+        -260
+      ],
+      "id": "0dbdbb93-8c8e-4cb7-9ff8-be60c0b83663",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "EO9ZLtZwBQ3MGBDo",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -3180,
+        -260
+      ],
+      "id": "3f219be0-b0da-482f-a231-3f6c50e041d3",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "separator": "<>{}';",
+        "chunkSize": 10000000000
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -3080,
+        -140
+      ],
+      "id": "6e9526ed-1fe3-4f53-a741-0123780ff5b9",
+      "name": "Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.query }}",
+        "options": {
+          "systemMessage": "=You are a knowledgeable and articulate AI news assistant that summarizes the latest global and regional technology news with a special focus on its relevance to the Oil & Gas industry, AI advancements, and strategic innovations.\n\nYou have access to a continuously updating knowledge base containing news summaries, each enriched with metadata like title, date, source, and a trust score.\n\nEvery 10 minutes, your database is refreshed with the latest RSS feed articles. When a user asks a question, perform a semantic search through this knowledge base and generate a clear, concise, and insightful response that: \n\nPrioritizes high trust score articles.\n\nHighlights the impact on oil and gas, energy transition, or AI in industry.\n\nDisplay all the responses provided by the supabase vector database. \n\nIncludes the title, date, and source of key articles referenced.\n\nProvides 4 sentence summary on each news article in pointers. \n\nMaintains a professional but human tone—brief, helpful, and informative.\n\n💬 Examples of what users might ask:\n“What’s the latest in AI affecting the energy sector?”\n\n“Any new tech startups in the Middle East?”\n\n“Summarize today’s most important tech news.”\n\nOnly answer from the articles in your vector store unless the user requests general insight.\n\n\nThe current date and time is {{ $now.toString() }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -2440,
+        -400
+      ],
+      "id": "5ae65115-abb9-47da-85e6-0fca2d129d02",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-chat-v3-0324:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2520,
+        -200
+      ],
+      "id": "d6a00ff9-420e-45d3-9a56-6af82c69542c",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "vBeYz6cdSYujG48B",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.query }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -2340,
+        -120
+      ],
+      "id": "922ec4bb-3d51-41a1-8830-9e86f3ff2606",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Call this tool to access the database whenever the user or ai agent asks about it. Semantically search the data and give the best matching results. ",
+        "tableName": {
+          "__rl": true,
+          "value": "N8N",
+          "mode": "list",
+          "cachedResultName": "N8N"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -2820,
+        960
+      ],
+      "id": "80f4eed7-98d4-4fe1-8aaf-015db1362f78",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "S3HTJvkaSLfghROZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "snowflake-arctic-embed:22m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -2800,
+        1100
+      ],
+      "id": "431fbac8-95df-44f6-beaa-44a60b0219b7",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "EO9ZLtZwBQ3MGBDo",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "078b7757-ab30-40f8-befa-945fac217c49",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        -400
+      ],
+      "id": "881f06b3-b1fd-4c8a-b2c3-b9993cd76058",
+      "name": "Webhook",
+      "webhookId": "078b7757-ab30-40f8-befa-945fac217c49"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1780,
+        -400
+      ],
+      "id": "99db9b5c-14c1-49d2-b484-38a098971f44",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2b50bf5-22ba-4e56-b148-2158ff4f5626",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1740,
+        820
+      ],
+      "id": "5590ea31-5e7f-410c-8a1a-cd3e0ea01ee5",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0].json.output;\n\nconst cleanedText = raw\n  .replace(/\\\\n/g, '\\n')                              // Convert escaped newlines\n  .replace(/\\*\\*/g, '')                               // Remove markdown bold\n  .replace(/\\[([^\\]]+)\\]\\((.*?)\\)/g, '$1 ($2)')       // Convert [title](url) → title (url)\n  .replace(/- /g, '\\n- ')                             // Ensure dash bullets start new lines\n  .replace(/\\n{2,}/g, '\\n\\n')                         // Keep clean double newlines for spacing\n  .trim();\n\nreturn [\n  {\n    json: {\n      formatted_output: cleanedText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1540,
+        820
+      ],
+      "id": "4c96dd19-ae51-4554-bcd6-23bf8baec815",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  return {\n    json: {\n      ai_response: item.json.result || item.json.output || item.json\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -400
+      ],
+      "id": "a2b3c3e0-15a9-4121-91c9-e2a3eb7c77a1",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the output from the previous node (Execute Command)\nconst [inputItem] = $input.all();\n\n// Access the stdout string which contains your JSON\nconst jsonString = inputItem.json.stdout;\n\n// The Python script output has some trailing whitespace and newlines, let's clean it up.\nconst cleanedJsonString = jsonString.trim();\n\n// Parse the JSON string into a JavaScript object\nconst articlesObject = JSON.parse(cleanedJsonString);\n\n// This will be our final array of n8n items\nconst newItems = [];\n\n// Loop over each key (the URL) in the articles object\nfor (const url in articlesObject) {\n  // Get the article data (title, published, summary)\n  const articleData = articlesObject[url];\n  \n  // Create a new n8n item for each article\n  // We'll merge the URL with the rest of the article data\n  newItems.push({\n    json: {\n      url: url,\n      ...articleData\n    }\n  });\n}\n\n// Return the array of new items. Each item will represent one article.\nreturn newItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3760,
+        -480
+      ],
+      "id": "6f477c99-8104-4b8d-8068-3f72e630d830",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "description": "News_URL | Title | Date | Summary | Trust Score | Impact | Location | Latitude | Longitude",
+        "topK": 6
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        -2180,
+        -180
+      ],
+      "id": "e909a773-8ca2-4bca-8def-cc7f1afae681",
+      "name": "Answer questions with a vector store",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "N8N",
+          "mode": "list",
+          "cachedResultName": "N8N"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -2340,
+        40
+      ],
+      "id": "7e166cbd-d7dd-40a0-9bc3-905ecb17ede1",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "S3HTJvkaSLfghROZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "snowflake-arctic-embed:22m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        180
+      ],
+      "id": "bb277ca0-9152-4fe4-a361-3466ea83ee6e",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "EO9ZLtZwBQ3MGBDo",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-chat-v3-0324:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2040,
+        40
+      ],
+      "id": "3c64aaab-8da4-46cf-9de7-f60bbb1ec582",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "2zWmnYjytAejoNht",
+          "name": "OpenRouter account 3"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        -2640,
+        380
+      ],
+      "id": "66d1df0a-9c86-471e-805e-61a05174404f",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "gcA9jmxHJfLjUyfc",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.query }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryZep",
+      "typeVersion": 1.3,
+      "position": [
+        -2760,
+        280
+      ],
+      "id": "ab561ae6-79b6-4557-b66c-fbbbfbd4867d",
+      "name": "Zep",
+      "credentials": {
+        "zepApi": {
+          "id": "x4EeaqKZSpvyfirK",
+          "name": "Zep Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4200,
+        -480
+      ],
+      "id": "1a542658-b3ef-45e3-9e53-1c52802d0fc2",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store2": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        []
+      ]
+    },
+    "Zep": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9e037438-4566-48d1-8d3f-55a40e45c645",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "jSzNF3cdkN7H9i5q",
+  "tags": []
+}
